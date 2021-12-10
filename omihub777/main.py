@@ -43,8 +43,10 @@ parser.add_argument("--num-layers", default=7, type=int)
 parser.add_argument("--hidden", default=384, type=int)
 parser.add_argument("--mlp-hidden", default=384, type=int)
 parser.add_argument("--off-cls-token", action="store_true")
+parser.add_argument("--joint", action="store_true")
 parser.add_argument("--seed", default=42, type=int)
 parser.add_argument("--project-name", default="VisionTransformer")
+parser.add_argument("--joint-size", default=2, type=int)
 args = parser.parse_args()
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
@@ -97,7 +99,11 @@ class Net(pl.LightningModule):
             out = self.model(img)
             loss = self.criterion(out, label)*lambda_ + self.criterion(out, rand_label)*(1.-lambda_)
         else:
-            out = self(img)
+            if self.model.joint:
+                out = self.model(img, self.hparams.joint_size)
+#                 label = label.repeat_interleave(self.model.patch ** 2)
+            else:
+                out = self(img)
             loss = self.criterion(out, label)
 
         if not self.log_image_flag and not self.hparams.dry_run:
@@ -110,15 +116,26 @@ class Net(pl.LightningModule):
         return loss
 
     def training_epoch_end(self, outputs):
-        self.log("lr", self.optimizer.param_groups[0]["lr"], on_epoch=self.current_epoch)
+        self.log("lr", self.optimizer.param_groups[0]["lr"], on_epoch=True)
 
     def validation_step(self, batch, batch_idx):
         img, label = batch
-        out = self(img)
-        loss = self.criterion(out, label)
-        acc = torch.eq(out.argmax(-1), label).float().mean()
-        self.log("val_loss", loss)
-        self.log("val_acc", acc)
+
+        if self.model.joint:
+            methods = ["zeros", "single"]
+            outs = [self.model(img, self.hparams.joint_size, eval_method) for eval_method in methods ]
+            for idx in range(len(outs)):
+                out = outs[idx]
+                loss = self.criterion(out, label)
+                acc = torch.eq(out.argmax(-1), label).float().mean()
+                self.log("val_loss " + methods[idx], loss)
+                self.log("val_acc " + methods[idx], acc)
+        else:
+            out = self(img)
+            loss = self.criterion(out, label)
+            acc = torch.eq(out.argmax(-1), label).float().mean()
+            self.log("val_loss", loss)
+            self.log("val_acc", acc)
         return loss
 
     def _log_image(self, image):

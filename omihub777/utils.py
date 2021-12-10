@@ -29,7 +29,8 @@ def get_model(args):
             num_layers=args.num_layers,
             hidden=args.hidden,
             head=args.head,
-            is_cls_token=args.is_cls_token
+            is_cls_token=args.is_cls_token,
+            joint=args.joint
             )
     else:
         raise NotImplementedError(f"{args.model_name} is not implemented yet...")
@@ -122,5 +123,7 @@ def get_experiment_name(args):
         experiment_name+="_mu"
     if args.off_cls_token:
         experiment_name+="_gap"
+    if args.joint:
+        experiment_name+='_joint' + str(args.joint_size)
     print(f"Experiment:{experiment_name}")
     return experiment_name
