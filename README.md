@@ -5,7 +5,7 @@ The directory "preliminary experiment" is our code to do preliminary experiment.
 
 The directory "omihub777" is a fork to [link](https://github.com/omihub777/ViT-CIFAR). We modified the model and the training procedure to get the joint training running. The graph of result is in devpost and write-up.
 
-**Note** in the default setting that repository use autoaugment to get 90% test accuracy on CIFAR-10. 
+**Note** in  default setting forked repository use autoaugment to get 90% test accuracy on CIFAR-10. 
 To better compare our method, we turn off autoaugment and just use random crop and horizontol flipping as augmentation. 
 The accuracy of their model when turned off autoaugment is around 85%.
 
